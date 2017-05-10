@@ -24,6 +24,7 @@
 #include <complex>
 
 #include "DecoderPDSCH.h"
+#include "DecoderASN1.h"
 
 extern "C" {
 #include "lte/lte.h"
@@ -144,6 +145,8 @@ void DecoderPDSCH::decode(shared_ptr<LteBuffer> lbuf, int cfi)
         .subframe = lbuf->sfn,
     };
 
+    auto decoderASN1 = dynamic_pointer_cast<DecoderASN1>(_decoderUDP);
+
     for (auto &r : _rntis) {
         auto ndci = lte_decode_pdcch(_subframes.data(),
                                      _subframes.size(),
@@ -159,7 +162,8 @@ void DecoderPDSCH::decode(shared_ptr<LteBuffer> lbuf, int cfi)
                 lbuf->crcValid = true;
                 int len;
                 auto data = (const char *) lte_pdsch_blk_abuf(_block, &len);
-                _decoderASN1->send(data, len/8, r.first);
+                if (decoderASN1) decoderASN1->send(data, len/8, r.first);
+                else if (_decoderUDP) _decoderUDP->send(data, len/8);
             }
         }
     }
@@ -201,9 +205,9 @@ void DecoderPDSCH::attachOutboundQueue(shared_ptr<BufferQueue> q)
     _outboundQueue = q;
 }
 
-void DecoderPDSCH::attachDecoderASN1(shared_ptr<DecoderASN1> d)
+void DecoderPDSCH::attachDecoderUDP(shared_ptr<DecoderUDP> d)
 {
-    _decoderASN1 = d;
+    _decoderUDP = d;
 }
 
 void DecoderPDSCH::setCellId(unsigned cellId, unsigned rbs,

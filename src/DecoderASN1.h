@@ -1,10 +1,9 @@
 #ifndef _DECODER_ASN1_
 #define _DECODER_ASN1_
 
-#include <netinet/in.h>
-#include <vector>
+#include "DecoderUDP.h"
 
-class DecoderASN1 {
+class DecoderASN1 : public DecoderUDP {
 public:
     DecoderASN1() = default;
     DecoderASN1(const DecoderASN1 &d) = default;
@@ -14,12 +13,7 @@ public:
     DecoderASN1 &operator=(const DecoderASN1 &d) = default;
     DecoderASN1 &operator=(DecoderASN1 &&d) = default;
 
-    bool open(int port = 8888);
-    bool send(const char *data, int len, uint16_t rnti);
-
-private:
-    int _sock;
-    struct sockaddr_in _addr;
+    void send(const char *data, size_t len, uint16_t rnti);
 };
 
 #endif /* _DECODER_ASN1_ */

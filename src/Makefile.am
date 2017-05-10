@@ -23,6 +23,7 @@ libopenphy_la_SOURCES = \
 	TimestampBuffer.cpp \
 	UHDDevice.cpp \
 	FreqAverager.cpp \
+	DecoderUDP.cpp \
 	DecoderASN1.cpp \
 	LteBuffer.cpp
 
@@ -34,15 +35,17 @@ ltedecode_LDFLAGS = -pthread
 
 noinst_HEADERS = \
 	BufferQueue.h \
+	Converter.h \
 	DecoderPDSCH.h \
 	IOInterface.h \
 	Resampler.h \
-	Synchronizer.h \
-	SynchronizerPDSCH.h \
-	UHDDevice.h \
-	Converter.h \
-	FreqAverager.h \
-	LteBuffer.h \
 	SignalVector.h \
+	Synchronizer.h \
 	SynchronizerPBCH.h \
-	TimestampBuffer.h
+	SynchronizerPDSCH.h \
+	TimestampBuffer.h \
+	UHDDevice.h \
+	FreqAverager.h \
+	DecoderUDP.h \
+	DecoderASN1.h \
+	LteBuffer.h

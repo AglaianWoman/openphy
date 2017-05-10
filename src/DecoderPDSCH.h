@@ -8,7 +8,7 @@
 #include <string>
 
 #include "BufferQueue.h"
-#include "DecoderASN1.h"
+#include "DecoderUDP.h"
 
 using namespace std;
 
@@ -27,7 +27,7 @@ public:
 
     void attachInboundQueue(shared_ptr<BufferQueue> q);
     void attachOutboundQueue(shared_ptr<BufferQueue> q);
-    void attachDecoderASN1(shared_ptr<DecoderASN1> d);
+    void attachDecoderUDP(shared_ptr<DecoderUDP> d);
 
     bool addRNTI(unsigned rnti, string s = "");
     bool delRNTI(unsigned rnti);
@@ -53,7 +53,7 @@ private:
     unsigned _cellId, _rbs, _ng, _txAntennas;
 
     shared_ptr<BufferQueue> _inboundQueue, _outboundQueue;
-    shared_ptr<DecoderASN1> _decoderASN1;
+    shared_ptr<DecoderUDP> _decoderUDP;
 
     struct lte_pdsch_blk *_block;
     vector<struct lte_subframe *> _subframes;

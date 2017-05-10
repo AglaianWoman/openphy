@@ -52,6 +52,7 @@ struct lte_config {
     int threads;
     uint16_t rnti;
     enum dev_ref_type ref;
+    bool udp;
 };
 
 static void print_help()
@@ -66,7 +67,8 @@ static void print_help()
         "  -b    Number of LTE resource blocks (default = auto)\n"
         "  -r    LTE RNTI (default = 0xFFFF)\n"
         "  -x    Enable external device reference (default = off)\n"
-        "  -p    Enable GPSDO reference (default = off)\n\n");
+        "  -p    Enable GPSDO reference (default = off)\n"
+        "  -u    Output raw UDP instead of Wireshark MAC-LTE (default = off)\n");
 }
 
 static void print_config(struct lte_config *config)
@@ -134,8 +136,9 @@ static int handle_options(int argc, char **argv, struct lte_config *config)
     config->threads = 1;
     config->rnti = 0xffff;
     config->ref = REF_INTERNAL;
+    config->udp = false;
 
-    while ((option = getopt(argc, argv, "ha:c:f:g:j:b:r:xp")) != -1) {
+    while ((option = getopt(argc, argv, "ha:c:f:g:j:b:r:xpu")) != -1) {
         switch (option) {
         case 'h':
             print_help();
@@ -170,6 +173,9 @@ static int handle_options(int argc, char **argv, struct lte_config *config)
             break;
         case 'p':
             config->ref = REF_GPSDO;
+            break;
+        case 'u':
+            config->udp = true;
             break;
         default:
             print_help();
@@ -211,6 +217,7 @@ int main(int argc, char **argv)
     struct lte_config config;
     struct lte_buffer *buf;
     std::vector<std::thread> threads;
+    std::shared_ptr<DecoderUDP> output;
 
     if (handle_options(argc, argv, &config) < 0)
         return -1;
@@ -219,8 +226,10 @@ int main(int argc, char **argv)
 
     auto pdschQueue = std::make_shared<BufferQueue>();
     auto pdschReturnQueue = std::make_shared<BufferQueue>();
-    auto asn1 = std::make_shared<DecoderASN1>();
     SynchronizerPDSCH sync(config.chans);
+
+    if (config.udp) output = std::make_shared<DecoderUDP>();
+    else output = std::make_shared<DecoderASN1>();
 
     sync.attachInboundQueue(pdschReturnQueue);
     sync.attachOutboundQueue(pdschQueue);
@@ -229,14 +238,14 @@ int main(int argc, char **argv)
     for (int i = 0; i < NUM_RECV_SUBFRAMES; i++)
         pdschReturnQueue->write(std::make_shared<LteBuffer>(config.chans));
 
-    asn1->open();
+    output->open();
     std::vector<DecoderPDSCH> decoders(config.threads,
                                        DecoderPDSCH(config.chans));
     for (auto &d : decoders) {
         d.addRNTI(config.rnti);
         d.attachInboundQueue(pdschQueue);
         d.attachOutboundQueue(pdschReturnQueue);
-        d.attachDecoderASN1(asn1);
+        d.attachDecoderUDP(output);
         threads.push_back(std::thread(&DecoderPDSCH::start, &d));
     }
 
