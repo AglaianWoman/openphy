@@ -20,6 +20,7 @@ libopenphy_la_SOURCES = \
 	Synchronizer.cpp \
 	SynchronizerPBCH.cpp \
 	SynchronizerPDSCH.cpp \
+	SynchronizerManual.cpp \
 	TimestampBuffer.cpp \
 	UHDDevice.cpp \
 	FreqAverager.cpp \
@@ -43,6 +44,7 @@ noinst_HEADERS = \
 	Synchronizer.h \
 	SynchronizerPBCH.h \
 	SynchronizerPDSCH.h \
+	SynchronizerManual.h \
 	TimestampBuffer.h \
 	UHDDevice.h \
 	FreqAverager.h \

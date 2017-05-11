@@ -88,7 +88,7 @@ bool Synchronizer::reopen(size_t rbs)
     _rx = lte_init();
     _rx->state = LTE_STATE_PSS_SYNC;
     _rx->last_state = LTE_STATE_PSS_SYNC;
-    _rx->rbs;
+    _rx->rbs = rbs;
     _cellId = -1;
     _pssMisses = 0;
     _sssMisses = 0;
@@ -113,7 +113,7 @@ bool Synchronizer::open(size_t rbs, int ref, const std::string &args)
     _rx = lte_init();
     _rx->state = LTE_STATE_PSS_SYNC;
     _rx->last_state = LTE_STATE_PSS_SYNC;
-    _rx->rbs;
+    _rx->rbs = rbs;
     _cellId = -1;
     _pssMisses = 0;
     _sssMisses = 0;

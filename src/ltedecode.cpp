@@ -26,8 +26,8 @@
 #include <unistd.h>
 
 #include "BufferQueue.h"
-#include "SynchronizerPBCH.h"
 #include "SynchronizerPDSCH.h"
+#include "SynchronizerManual.h"
 #include "DecoderPDSCH.h"
 #include "DecoderASN1.h"
 #include "FreqAverager.h"
@@ -53,6 +53,10 @@ struct lte_config {
     uint16_t rnti;
     enum dev_ref_type ref;
     bool udp;
+    bool manualMIB;
+    int cellId;
+    int phichNg;
+    int txAntennas;
 };
 
 static void print_help()
@@ -137,8 +141,12 @@ static int handle_options(int argc, char **argv, struct lte_config *config)
     config->rnti = 0xffff;
     config->ref = REF_INTERNAL;
     config->udp = false;
+    config->manualMIB = false;
+    config->cellId = -1;
+    config->phichNg = -1;
+    config->txAntennas = -1;
 
-    while ((option = getopt(argc, argv, "ha:c:f:g:j:b:r:xpu")) != -1) {
+    while ((option = getopt(argc, argv, "ha:c:f:g:j:b:r:xpui:n:t:")) != -1) {
         switch (option) {
         case 'h':
             print_help();
@@ -177,6 +185,15 @@ static int handle_options(int argc, char **argv, struct lte_config *config)
         case 'u':
             config->udp = true;
             break;
+        case 'i':
+            config->cellId = atoi(optarg);
+            break;
+        case 'n':
+            config->phichNg = atoi(optarg);
+            break;
+        case 't':
+            config->txAntennas = atoi(optarg);
+            break;
         default:
             print_help();
             return -1;
@@ -193,6 +210,17 @@ static int handle_options(int argc, char **argv, struct lte_config *config)
         print_help();
         printf("\nPlease specify downlink frequency\n");
         return -1;
+    }
+
+    config->manualMIB = config->cellId >= 0 ||
+                        config->phichNg >= 0 || config->txAntennas > 0;
+
+    if (!(config->manualMIB &&
+          config->cellId > 0 &&
+          config->phichNg > 0 && config->txAntennas > 0)) {
+        print_help();
+        printf("\nCell Id, PHICH Ng, number of resource blocks, and downlink");
+        printf(" transmit antennas must be specified for manual configuration\n");
     }
 
     if (config->rbs && !valid_rbs(config->rbs)) {
@@ -218,6 +246,7 @@ int main(int argc, char **argv)
     struct lte_buffer *buf;
     std::vector<std::thread> threads;
     std::shared_ptr<DecoderUDP> output;
+    std::unique_ptr<SynchronizerPDSCH> sync;
 
     if (handle_options(argc, argv, &config) < 0)
         return -1;
@@ -226,13 +255,20 @@ int main(int argc, char **argv)
 
     auto pdschQueue = std::make_shared<BufferQueue>();
     auto pdschReturnQueue = std::make_shared<BufferQueue>();
-    SynchronizerPDSCH sync(config.chans);
+
+    if (!config.manualMIB)
+        sync = std::make_unique<SynchronizerPDSCH>(config.chans);
+    else
+        sync = std::make_unique<SynchronizerManual>(config.cellId,
+                                                    config.txAntennas,
+                                                    config.phichNg,
+                                                    config.chans);
 
     if (config.udp) output = std::make_shared<DecoderUDP>();
     else output = std::make_shared<DecoderASN1>();
 
-    sync.attachInboundQueue(pdschReturnQueue);
-    sync.attachOutboundQueue(pdschQueue);
+    sync->attachInboundQueue(pdschReturnQueue);
+    sync->attachOutboundQueue(pdschQueue);
 
     /* Prime the queue */
     for (int i = 0; i < NUM_RECV_SUBFRAMES; i++)
@@ -249,13 +285,13 @@ int main(int argc, char **argv)
         threads.push_back(std::thread(&DecoderPDSCH::start, &d));
     }
 
-    if (!sync.open(config.rbs, config.ref, config.args)) {
+    if (!sync->open(config.rbs, config.ref, config.args)) {
         fprintf(stderr, "Radio: Failed to initialize\n");
         return -1;
     }
-    sync.setFreq(config.freq);
-    sync.setGain(config.gain);
-    sync.start();
+    sync->setFreq(config.freq);
+    sync->setGain(config.gain);
+    sync->start();
 
     for (auto &t : threads)
         t.join();

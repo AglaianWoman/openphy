@@ -14,9 +14,9 @@ public:
     void attachInboundQueue(shared_ptr<BufferQueue> q);
     void attachOutboundQueue(shared_ptr<BufferQueue> q);
 
-    void start();
+    virtual void start() override;
 
-private:
+protected:
     void drive(int adjust);
     void handleFreqOffset(double offset);
 

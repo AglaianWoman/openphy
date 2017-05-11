@@ -9,8 +9,8 @@ class SynchronizerPBCH : public Synchronizer {
 public:
     SynchronizerPBCH(size_t chans = 1);
 
-    void start();
-    virtual void reset();
+    virtual void start() override;
+    void reset();
     int numRB() const { return _mibDecodeRB; }
 
 private:

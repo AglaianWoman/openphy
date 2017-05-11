@@ -25,6 +25,8 @@ public:
     Synchronizer(const Synchronizer &) = delete;
     Synchronizer &operator=(const Synchronizer &) = delete;
 
+    virtual void start() = 0;
+
     bool open(size_t rbs, int ref, const std::string &args);
     bool reopen(size_t rbs);
     void reset();
